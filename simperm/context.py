@@ -2,8 +2,6 @@ from collections import UserDict
 
 
 class Context(UserDict):
-    def __init__(self, **kwargs):
-        super().__init__(kwargs)
 
     def __hash__(self):
         _res = []

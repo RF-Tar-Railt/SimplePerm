@@ -1,13 +1,12 @@
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional
-from ..node import Permission
 
 
 class BasePermissionProcessor(metaclass=ABCMeta):
     def __init__(self):
-        self.source: Dict[str, Permission] = {}
+        self.source: Dict[str, bool] = {}
 
-    def set_source(self, source: Dict[str, Permission]):
+    def set_source(self, source: Dict[str, bool]):
         self.source = source
 
     def entry(self, prev: Optional[bool], permission: str) -> Optional[bool]:

@@ -8,8 +8,8 @@ from .node import PermissionNode, GroupNode
 @dataclass(init=False)
 class User:
     uid: str
-    data: Dict[Context, List[PermissionNode]]
-    groups: Dict[Context, List[GroupNode]]
+    data: Dict[Context, Dict[str, bool]]
+    groups: Dict[Context, List[str]]
 
     def __init__(
         self,
@@ -21,22 +21,19 @@ class User:
         self.data = {}
         self.groups = {}
         for ctx, nodes in _init or {}:
-            self.data[ctx] = [n for n in nodes if isinstance(n, PermissionNode)]
-            self.groups[ctx] = [n for n in nodes if isinstance(n, GroupNode)]
+            self.data[ctx] = {n.name: n.value for n in nodes if isinstance(n, PermissionNode)}
+            self.groups[ctx] = [n.name for n in nodes if isinstance(n, GroupNode)]
 
     def __hash__(self):
         return hash(self.uid)
 
     def add_permission(self, perm: PermissionNode, context: Optional[Context] = None):
-        if perm not in (perms := self.data.setdefault(context or Context(), [])):
-            perms.append(perm)
+        if perm.name not in (perms := self.data.setdefault(context or Context(), {})):
+            perms[perm.name] = perm.value
 
     def remove_permission(self, perm: str, context: Optional[Context] = None):
-        perms = self.data.get(context or Context(), [])
-        for p in perms:
-            if p.name == perm:
-                perms.remove(p)
-                return
+        if perm in (perms := self.data.setdefault(context or Context(), {})):
+            perms.pop(perm)
 
     def join_group(
         self, group: Union[str, GroupNode], context: Optional[Context] = None
@@ -46,8 +43,8 @@ class User:
             if isinstance(group, GroupNode)
             else GroupNode(f"group:{group.split(':')[-1]}")
         )
-        if target not in (groups := self.groups.setdefault(context or Context(), [])):
-            groups.append(target)
+        if target.name not in (groups := self.groups.setdefault(context or Context(), [])):
+            groups.append(target.name)
 
     def leave_group(
         self, group: Union[str, GroupNode], context: Optional[Context] = None
@@ -57,44 +54,38 @@ class User:
             if isinstance(group, GroupNode)
             else GroupNode(f"group:{group.split(':')[-1]}")
         )
-        if target in (groups := self.groups.get(context or Context(), [])):
-            groups.remove(target)
+        if target.name in (groups := self.groups.get(context or Context(), [])):
+            groups.remove(target.name)
 
     def get_value(self, perm: str, context: Optional[Context] = None):
-        perms = self.data.get(context or Context(), [])
-        return next((p.value for p in perms if p.name == perm), False)
+        perms = self.data.get(context or Context(), {})
+        return next((v for n, v in perms.items() if n == perm), None)
 
     def change_value(self, perm: PermissionNode, context: Optional[Context] = None):
-        perms = self.data.get(context or Context(), [])
-        for p in perms:
-            if p.name == perm.name:
-                p.value = perm.value
-                return
+        if perm.name in (perms := self.data.setdefault(context or Context(), {})):
+            perms[perm.name] = perm.value
 
     def is_in(self, group: Union[str, GroupNode], context: Optional[Context] = None):
-        group = (
+        target = (
             group
             if isinstance(group, GroupNode)
             else GroupNode(f"group:{group.split(':')[-1]}")
         )
-        gps = self.groups.get(context or Context(), [])
-        for gp in gps:
-            if group == gp:
+        for gp in self.groups.get(context or Context(), []):
+            if target.name == gp:
                 return True
-            for ih in monitor.get_group(gp.name).get_inherits():
-                if ih.to_node() == group:
+            for ih in monitor.get_group(gp).get_inherits():
+                if ih.to_node() == target:
                     return True
         return False
 
     def export_permission(self, context: Optional[Context] = None):
         ctx = context or Context()
-        source = {n.name: n for n in self.data.get(ctx, [])}
-        gps = [monitor.get_group(gp.name) for gp in self.groups.get(ctx, [])]
+        source = self.data.get(ctx, {}).copy()
+        gps = [monitor.get_group(gp) for gp in self.groups.get(ctx, [])]
         gps.sort(key=lambda x: x.weight, reverse=True)
         for gp in gps:
-            add = gp.export_permission()
-            for k, v in add.items():
-                if k in source and not v.value:
-                    continue
-                source[k] = v
+            for k, v in gp.export_permission().items():
+                if k not in source or v:
+                    source[k] = v
         return source

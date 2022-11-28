@@ -16,7 +16,7 @@ class PermissionCalculator:
             result = processor.entry(result, permission)
         return result
 
-    def set_root_permission(self, source: Dict[str, Permission]):
+    def set_root_permission(self, source: Dict[str, bool]):
         for processor in self.processors:
             processor.set_source(source)
             processor.refresh()

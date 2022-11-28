@@ -8,8 +8,8 @@ from .monitor import monitor
 class Group:
     weight: int
     name: str
-    data: List[PermissionNode]
-    inherit: List[GroupNode]
+    data: Dict[str, bool]
+    inherit: List[str]
 
     def __init__(
         self,
@@ -19,9 +19,9 @@ class Group:
     ):
         self.name = name
         self.weight = weight
-        self.data = [i for i in _init if isinstance(i, PermissionNode)]
+        self.data = {p.name: p.value for p in _init if isinstance(p, PermissionNode)}
         self.inherit = [
-            i
+            i.name
             for i in _init
             if isinstance(i, GroupNode) and monitor.get_group(i.name).weight <= weight
         ]
@@ -34,23 +34,19 @@ class Group:
         return GroupNode(f"group:{self.name}")
 
     def add_permission(self, perm: PermissionNode):
-        if perm not in self.data:
-            self.data.append(perm)
+        if perm.name not in self.data:
+            self.data[perm.name] = perm.value
 
     def remove_permission(self, perm: str):
-        for p in self.data:
-            if p.name == perm:
-                self.data.remove(p)
-                return
+        if perm in self.data:
+            self.data.pop(perm)
 
     def get_value(self, perm: str):
-        return next((p.value for p in self.data if p.name == perm), False)
+        return next((v for n, v in self.data.items() if n == perm), None)
 
     def change_value(self, perm: PermissionNode):
-        for p in self.data:
-            if p.name == perm.name:
-                p.value = perm.value
-                return
+        if perm.name in self.data:
+            self.data[perm.name] = perm.value
 
     def add_inherit(self, other: Union[GroupNode, "Group", str]):
         target = (
@@ -60,24 +56,22 @@ class Group:
             if isinstance(other, str)
             else other.to_node()
         )
-        if target not in self.inherit:
-            self.inherit.append(target)
+        if target.name not in self.inherit:
+            self.inherit.append(target.name)
 
     def get_inherits(self):
         for ih in self.inherit:
-            gp = monitor.get_group(ih.name)
+            gp = monitor.get_group(ih)
             if gp.inherit:
                 yield from gp.get_inherits()
             yield gp
 
-    def export_permission(self) -> Dict[str, PermissionNode]:
-        source = {n.name: n for n in self.data}
+    def export_permission(self) -> Dict[str, bool]:
+        source = self.data.copy()
         gps = list(set(self.get_inherits()))
         gps.sort(key=lambda x: x.weight, reverse=True)
         for gp in gps:
-            add = gp.export_permission()
-            for k, v in add.items():
-                if k in source and not v.value:
-                    continue
-                source[k] = v
+            for k, v in gp.export_permission().items():
+                if k not in source or v:
+                    source[k] = v
         return source

@@ -50,8 +50,7 @@ class PermissionMonitor:
         cal = calculator or self.calculator
         if not target:
             raise ValueError
-        source = holder.export_permission(context)
-        cal.set_root_permission(source)
+        cal.set_root_permission(holder.export_permission(context))
         if isinstance(target, str):
             if target.startswith("group:"):
                 return holder.is_in(target)
