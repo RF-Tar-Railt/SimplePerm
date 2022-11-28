@@ -4,7 +4,6 @@ from ..node import Permission
 
 
 class BasePermissionProcessor(metaclass=ABCMeta):
-
     def __init__(self):
         self.source: Dict[str, Permission] = {}
 
@@ -20,7 +19,9 @@ class BasePermissionProcessor(metaclass=ABCMeta):
     def has_permission(self, permission: str) -> Optional[bool]:
         ...
 
-    def has_perm_override(self, prev: Optional[bool], permission: str) -> Optional[bool]:  # noqa
+    def has_perm_override(
+        self, prev: Optional[bool], permission: str
+    ) -> Optional[bool]:  # noqa
         return prev
 
     def refresh(self):

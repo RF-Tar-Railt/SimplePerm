@@ -32,17 +32,20 @@ class PermissionMonitor:
     def to_dict(self):
         holders = [asdict(h) for h in self.holders.values()]
         for h in holders:
-            h['data'] = {str(k): v for k, v in h['data'].items()}
-            h['groups'] = {str(k): v for k, v in h['groups'].items()}
+            h["data"] = {str(k): v for k, v in h["data"].items()}
+            h["groups"] = {str(k): v for k, v in h["groups"].items()}
         groups = [asdict(g) for g in self.groups.values()]
-        return {"holders": {h["uid"]: h for h in holders}, "groups": {g["name"]: g for g in groups}}
+        return {
+            "holders": {h["uid"]: h for h in holders},
+            "groups": {g["name"]: g for g in groups},
+        }
 
     def check_permission(
-            self,
-            holder: "User",
-            target: Union[str, PermissionNode],
-            context: Optional[Context] = None,
-            calculator: Optional[PermissionCalculator] = None
+        self,
+        holder: "User",
+        target: Union[str, PermissionNode],
+        context: Optional[Context] = None,
+        calculator: Optional[PermissionCalculator] = None,
     ):
         cal = calculator or self.calculator
         if not target:

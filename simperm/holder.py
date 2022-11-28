@@ -12,15 +12,15 @@ class User:
     groups: Dict[Context, List[GroupNode]]
 
     def __init__(
-            self,
-            uid: str,
-            _init: Optional[Dict[Context, List[Union[PermissionNode, GroupNode]]]] = None
+        self,
+        uid: str,
+        _init: Optional[Dict[Context, List[Union[PermissionNode, GroupNode]]]] = None,
     ):
         self.uid = uid
         monitor.add_holder(self)
         self.data = {}
         self.groups = {}
-        for ctx, nodes in (_init or {}):
+        for ctx, nodes in _init or {}:
             self.data[ctx] = [n for n in nodes if isinstance(n, PermissionNode)]
             self.groups[ctx] = [n for n in nodes if isinstance(n, GroupNode)]
 
@@ -38,13 +38,25 @@ class User:
                 perms.remove(p)
                 return
 
-    def join_group(self, group: Union[str, GroupNode], context: Optional[Context] = None):
-        target = group if isinstance(group, GroupNode) else GroupNode(f"group:{group.split(':')[-1]}")
+    def join_group(
+        self, group: Union[str, GroupNode], context: Optional[Context] = None
+    ):
+        target = (
+            group
+            if isinstance(group, GroupNode)
+            else GroupNode(f"group:{group.split(':')[-1]}")
+        )
         if target not in (groups := self.groups.setdefault(context or Context(), [])):
             groups.append(target)
 
-    def leave_group(self, group: Union[str, GroupNode], context: Optional[Context] = None):
-        target = group if isinstance(group, GroupNode) else GroupNode(f"group:{group.split(':')[-1]}")
+    def leave_group(
+        self, group: Union[str, GroupNode], context: Optional[Context] = None
+    ):
+        target = (
+            group
+            if isinstance(group, GroupNode)
+            else GroupNode(f"group:{group.split(':')[-1]}")
+        )
         if target in (groups := self.groups.get(context or Context(), [])):
             groups.remove(target)
 
@@ -60,7 +72,11 @@ class User:
                 return
 
     def is_in(self, group: Union[str, GroupNode], context: Optional[Context] = None):
-        group = group if isinstance(group, GroupNode) else GroupNode(f"group:{group.split(':')[-1]}")
+        group = (
+            group
+            if isinstance(group, GroupNode)
+            else GroupNode(f"group:{group.split(':')[-1]}")
+        )
         gps = self.groups.get(context or Context(), [])
         for gp in gps:
             if group == gp:

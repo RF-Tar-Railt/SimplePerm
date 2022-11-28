@@ -6,10 +6,7 @@ from .processor import BasePermissionProcessor
 class PermissionCalculator:
     processors: List[BasePermissionProcessor]
 
-    def __init__(
-        self,
-        processors: List[BasePermissionProcessor]
-    ):
+    def __init__(self, processors: List[BasePermissionProcessor]):
         self.processors = processors
 
     def check_permission(self, permission: str) -> Optional[bool]:

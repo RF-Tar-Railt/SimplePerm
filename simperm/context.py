@@ -28,4 +28,3 @@ class Context(UserDict):
                 segs = seg.split("=")
                 _data[segs[0]] = segs[1]
         return cls(**_data)
-

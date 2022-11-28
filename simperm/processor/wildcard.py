@@ -15,19 +15,24 @@ class WildcardProcessor(BasePermissionProcessor):
 
     @staticmethod
     def is_root_wild(permission: str) -> bool:
-        return permission in [WildcardProcessor.ROOT_WILDCARD, WildcardProcessor.ROOT_WILDCARD_WITH_QUOTES]
+        return permission in [
+            WildcardProcessor.ROOT_WILDCARD,
+            WildcardProcessor.ROOT_WILDCARD_WITH_QUOTES,
+        ]
 
     @staticmethod
     def is_wild(permission: str) -> bool:
-        return WildcardProcessor.is_root_wild(permission) or \
-               (permission.endswith(WildcardProcessor.WILDCARD_SUFFIX) and len(permission) > 2)
+        return WildcardProcessor.is_root_wild(permission) or (
+            permission.endswith(WildcardProcessor.WILDCARD_SUFFIX)
+            and len(permission) > 2
+        )
 
     wild_perm: Dict[str, Optional[bool]]
 
     def has_permission(self, permission: str) -> Optional[bool]:
         node = permission
         while 1:
-            end_index = node.rfind('.')  # BaseNode.NODE_SEPARATOR
+            end_index = node.rfind(".")  # BaseNode.NODE_SEPARATOR
             if end_index == -1:
                 break
             node = node[:end_index]
@@ -42,7 +47,7 @@ class WildcardProcessor(BasePermissionProcessor):
         for k, v in self.source.items():
             if (not k.endswith(self.WILDCARD_SUFFIX)) or len(k) <= 2:
                 continue
-            k = k[:len(k) - 2]
+            k = k[: len(k) - 2]
             value = v.value
             builder[k] = value
         self.wild_perm = builder.copy()
