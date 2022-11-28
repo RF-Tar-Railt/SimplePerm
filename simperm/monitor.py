@@ -1,45 +1,33 @@
 from typing import Dict, TYPE_CHECKING, Union, Optional
 from dataclasses import asdict
 from .context import Context
-from .node import PermissionNode, GroupNode
+from .calculator import PermissionCalculator
+from .processor import WildcardProcessor, DirectProcessor
+from .node import PermissionNode
 
 if TYPE_CHECKING:
-    from .holder import Holder
+    from .holder import User
     from .group import Group
 
 
 class PermissionMonitor:
-    holders: Dict[str, "Holder"]
+    holders: Dict[str, "User"]
     groups: Dict[str, "Group"]
+    calculator: PermissionCalculator
 
     def __init__(self):
         self.holders = {}
         self.groups = {}
+        self.calculator = PermissionCalculator([DirectProcessor(), WildcardProcessor()])
 
-    def add_holder(self, holder: "Holder"):
+    def add_holder(self, holder: "User"):
         self.holders[holder.uid] = holder
 
     def add_group(self, group: "Group"):
         self.groups[group.name] = group
 
-    def get_holder_groups(self, holder: "Holder", context: Optional[Context] = None):
-        ctx = context or Context()
-        return [self.groups[i.name.split(":")[-1]] for i in holder.groups[ctx]]
-
-    def check_permission(
-            self, holder: "Holder",
-            target: Union[str, PermissionNode, GroupNode],
-            context: Optional[Context] = None,
-    ):
-        groups = self.get_holder_groups(holder, context)
-        groups.sort(key=lambda x: x.weight, reverse=True)
-
-        if isinstance(target, GroupNode) or (isinstance(target, str) and target.startswith("group:")):
-            target = target.name if isinstance(target, GroupNode) else target
-            return any(target == g.to_node().name for g in groups)
-        if isinstance(target, PermissionNode):
-            return next((True for g in groups if target in g.permissions), target in holder.data[context or Context()])
-        return next((True for g in groups if g.get_value(target)), holder.get_value(target, context))
+    def get_group(self, name: str):
+        return self.groups[name.split(":")[-1]]
 
     def to_dict(self):
         holders = [asdict(h) for h in self.holders.values()]
@@ -48,6 +36,24 @@ class PermissionMonitor:
             h['groups'] = {str(k): v for k, v in h['groups'].items()}
         groups = [asdict(g) for g in self.groups.values()]
         return {"holders": {h["uid"]: h for h in holders}, "groups": {g["name"]: g for g in groups}}
+
+    def check_permission(
+            self,
+            holder: "User",
+            target: Union[str, PermissionNode],
+            context: Optional[Context] = None,
+            calculator: Optional[PermissionCalculator] = None
+    ):
+        cal = calculator or self.calculator
+        if not target:
+            raise ValueError
+        source = holder.export_permission(context)
+        cal.set_root_permission(source)
+        if isinstance(target, str):
+            if target.startswith("group:"):
+                return holder.is_in(target)
+            return cal.check_permission(target)
+        return target.value == cal.check_permission(target.name)
 
 
 monitor = PermissionMonitor()
