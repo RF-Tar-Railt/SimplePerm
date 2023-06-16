@@ -1,4 +1,4 @@
-from simperm.holder import User
+from simperm.user import User
 from simperm.group import Group
 from simperm.node import Permission
 from simperm.monitor import monitor

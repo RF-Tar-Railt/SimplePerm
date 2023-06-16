@@ -1,4 +1,5 @@
 from collections import UserDict
+from typing import Literal
 
 
 class Context(UserDict):
@@ -26,3 +27,18 @@ class Context(UserDict):
                 segs = seg.split("=")
                 _data[segs[0]] = segs[1]
         return cls(**_data)
+
+    def satisfied(
+        self, other: "Context", mode: Literal['least_one', 'all'] = 'least_one'
+    ) -> bool:
+        if not self.data:
+            return True
+        if not other.data:
+            return False
+        return self.contain_all(other) if mode == 'all' else self.contain_least(other)
+
+    def contain_all(self, other: "Context"):
+        return self.data == other.data
+
+    def contain_least(self, other: "Context"):
+        return any((other.get(k) == v for k, v in self.data.items()))

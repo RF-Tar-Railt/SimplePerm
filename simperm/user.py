@@ -1,15 +1,15 @@
 from typing import Dict, Optional, List, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .context import Context
 from .monitor import monitor
 from .node import PermissionNode, GroupNode
 
 
-@dataclass(init=False)
+@dataclass(init=False, unsafe_hash=True, eq=True)
 class User:
-    uid: str
-    data: Dict[Context, Dict[str, bool]]
-    groups: Dict[Context, List[str]]
+    uid: str = field(compare=True, hash=True)
+    data: Dict[Context, Dict[str, bool]] = field(compare=False, hash=False)
+    groups: Dict[Context, List[str]] = field(compare=False, hash=False)
 
     def __init__(
         self,
@@ -23,9 +23,6 @@ class User:
         for ctx, nodes in _init or {}:
             self.data[ctx] = {n.name: n.value for n in nodes if isinstance(n, PermissionNode)}
             self.groups[ctx] = [n.name for n in nodes if isinstance(n, GroupNode)]
-
-    def __hash__(self):
-        return hash(self.uid)
 
     def add_permission(self, perm: PermissionNode, context: Optional[Context] = None):
         if perm.name not in (perms := self.data.setdefault(context or Context(), {})):

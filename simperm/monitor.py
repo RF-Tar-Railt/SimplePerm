@@ -6,7 +6,7 @@ from .processor import WildcardProcessor, DirectProcessor
 from .node import PermissionNode
 
 if TYPE_CHECKING:
-    from .holder import User
+    from .user import User
     from .group import Group
 
 

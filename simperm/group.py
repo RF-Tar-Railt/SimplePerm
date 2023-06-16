@@ -1,15 +1,15 @@
 from typing import List, Union, Dict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .node import PermissionNode, GroupNode
 from .monitor import monitor
 
 
-@dataclass(init=False)
+@dataclass(init=False, unsafe_hash=True, eq=True, order=True)
 class Group:
-    weight: int
-    name: str
-    data: Dict[str, bool]
-    inherit: List[str]
+    weight: int = field(hash=True, compare=True)
+    name: str = field(hash=True, compare=True)
+    data: Dict[str, bool] = field(hash=False, compare=False)
+    inherit: List[str] = field(hash=False, compare=False)
 
     def __init__(
         self,
@@ -26,9 +26,6 @@ class Group:
             if isinstance(i, GroupNode) and monitor.get_group(i.name).weight <= weight
         ]
         monitor.add_group(self)
-
-    def __hash__(self):
-        return hash((self.name, self.weight))
 
     def to_node(self) -> GroupNode:
         return GroupNode(f"group:{self.name}")
